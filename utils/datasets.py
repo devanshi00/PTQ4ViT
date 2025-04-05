@@ -71,11 +71,25 @@ class LoaderGenerator():
         assert self.train_set is not None
         return torch.utils.data.DataLoader(self.train_set, batch_size=self.train_batch_size, shuffle=True,  **self.train_loader_kwargs)
     
-    def test_loader(self,shuffle=False,batch_size=None):
-        assert self.test_set is not None
-        if batch_size is None:
-            batch_size=self.test_batch_size
-        return torch.utils.data.DataLoader(self.test_set, batch_size=batch_size, shuffle=shuffle,  **self.test_loader_kwargs)
+    def test_loader(self, shuffle=False, batch_size=None):
+    # print(self.root)
+      assert self.test_set is not None
+      if batch_size is None:
+          batch_size = self.test_batch_size
+      loader = torch.utils.data.DataLoader(self.test_set, batch_size=batch_size, shuffle=shuffle, **self.test_loader_kwargs)
+      limited_loader = []
+      for i, batch in enumerate(loader):
+          if i >= 15: 
+              break
+          limited_loader.append(batch)
+      return limited_loader
+
+    # def test_loader(self,shuffle=False,batch_size=None):
+    #     print(self.root)
+    #     assert self.test_set is not None
+    #     if batch_size is None:
+    #         batch_size=self.test_batch_size
+    #     return torch.utils.data.DataLoader(self.test_set, batch_size=batch_size, shuffle=shuffle,  **self.test_loader_kwargs)
     
     def val_loader(self):
         assert self.val_set is not None
@@ -202,7 +216,9 @@ class DetectionListDataset(Dataset):
 #     return torch.Tensor(rgb_array)/255
 
 class ImageNetLoaderGenerator(LoaderGenerator):
+   
     def load(self):
+        print(self.root)
         normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                      std=[0.229, 0.224, 0.225])
         self.train_transform = transforms.Compose([
@@ -222,6 +238,7 @@ class ImageNetLoaderGenerator(LoaderGenerator):
     
     @property
     def train_set(self):
+        
         if self._train_set is None:
             self._train_set=ImageFolder(os.path.join(self.root,'train'), self.train_transform)
         return self._train_set
@@ -338,4 +355,3 @@ class ViTImageNetLoaderGenerator(ImageNetLoaderGenerator):
         config = resolve_data_config({}, model=model)
         self.train_transform = create_transform(**config, is_training=True)
         self.test_transform = create_transform(**config)
-
