@@ -1,12 +1,12 @@
 import sys
 sys.path.insert(0,'..')
 sys.path.insert(0,'.')
-from example.test_vit import *
+# from example.test_vit import *
 import utils.net_wrap as net_wrap
 import utils.datasets as datasets
 import utils.integer as integer
 from utils.quant_calib import HessianQuantCalibrator
-
+from example.export_to_onnx import *
 from itertools import product
 
 def get_int_weights(name, config_name):
@@ -25,6 +25,7 @@ def get_int_weights(name, config_name):
 
     int_weights = integer.get_model_int_weight(wrapped_modules)
     torch.save(int_weights, f"./int_weights/{name}.pth")
+    export_onnx_model(net, name)
 
 
 if __name__ == "__main__":
