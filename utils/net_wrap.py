@@ -64,7 +64,10 @@ def wrap_modules_in_net(net,cfg):
         elif isinstance(m,nn.Linear):
             # Linear Layer
             idx = idx+1 if idx != 0 else idx
-            new_m = cfg.get_module(module_types[name[idx:]],m.in_features,m.out_features)
+            if key in module_types:
+               new_m = cfg.get_module(module_types[key], m.in_features, m.out_features)
+            else:
+               print(f"Skipping unknown module: {key}")
             new_m.weight.data=m.weight.data
             new_m.bias=m.bias
             replace_m=new_m
