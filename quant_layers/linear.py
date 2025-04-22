@@ -640,3 +640,15 @@ class PostGeluPTQSLBatchingQuantLinear(PTQSLBatchingQuantLinear):
             a_best_index = batch_similarities.argmax(dim=0, keepdim=True).reshape(1,1,-1)
             tmp_a_interval[a:a+1,:,:] = torch.gather(input_interval_candidates[a:a+1,:,:],dim=2,index=a_best_index)
         self.a_interval = tmp_a_interval.squeeze(-1)
+class ClassAttnPTQSLBatchingQuantLinear(PTQSLBatchingQuantLinear):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.cls_token_only = kwargs.get("cls_token_only", False)
+        self.layer_scale = nn.Parameter(torch.ones(1) * kwargs.get("layer_scale_init", 1e-5))
+        
+    def forward(self, x):
+        if self.cls_token_only:
+            cls_token = x[:, :1]
+            quant_cls = super().forward(cls_token)
+            return torch.cat([quant_cls * self.layer_scale, x[:, 1:]], dim=1)
+        return super().forward(x) * self.layer_scale
