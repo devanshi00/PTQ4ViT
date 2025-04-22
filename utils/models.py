@@ -24,6 +24,21 @@ def attention_forward(self, x):
     x = self.proj(x)
     x = self.proj_drop(x)
     return x
+def class_attention_forward(self, x):
+    B, N, C = x.shape
+    cls_token = x[:, :1]
+    patch_tokens = x[:, 1:]
+    
+    # Class attention specific processing
+    cls_q = self.cls_q(cls_token)
+    patch_k = self.patch_k(patch_tokens)
+    patch_v = self.patch_v(patch_tokens)
+    
+    attn = self.matmul1(cls_q, patch_k.transpose(-2, -1)) * self.scale
+    attn = attn.softmax(dim=-1)
+    x = self.matmul2(attn, patch_v)
+    
+    return torch.cat([x, patch_tokens], dim=1)
 
 def window_attention_forward(self, x, mask = None):
     B_, N, C = x.shape
@@ -85,6 +100,11 @@ def get_net(name):
             setattr(module, "matmul1", MatMul())
             setattr(module, "matmul2", MatMul())
             module.forward = MethodType(window_attention_forward, module)
+        if hasattr(module, 'class_attention'):
+            # CaiT specific handling
+            setattr(module, "matmul1", MatMul())
+            setattr(module, "matmul2", MatMul())
+            module.forward = MethodType(class_attention_forward, module)
 
     net.cuda()
     net.eval()
