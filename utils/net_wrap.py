@@ -40,7 +40,12 @@ def wrap_modules_in_net(net,cfg):
     wrapped_modules={}
     module_dict={}
     module_types = {"qkv":"qlinear_qkv", "proj":'qlinear_proj', 'fc1':'qlinear_MLP_1', 'fc2':"qlinear_MLP_2", 'head':'qlinear_classifier','matmul1':"qmatmul_qk", 'matmul2':"qmatmul_scorev", "reduction": "qlinear_reduction"}
-    
+    module_types.update({
+    "class_attn": "qlinear_class_attn",
+    "patch_proj": "qlinear_patch_proj",
+    "ls1": "layer_scale_1",
+    "ls2": "layer_scale_2"
+})
     it=[(name,m) for name,m in net.named_modules()]
     for name,m in it:
         module_dict[name]=m
@@ -80,6 +85,12 @@ def wrap_modules_in_net(net,cfg):
             replace_m=new_m
             wrapped_modules[name] = new_m
             setattr(father_module,name[idx:],replace_m)
+        elif isinstance(m, LayerScale):  # Handle LayerScale
+        idx = idx+1 if idx != 0 else idx
+        new_m = cfg.get_layer_scale_module(name)
+        replace_m = new_m
+        wrapped_modules[name] = new_m
+        setattr(father_module,name[idx:],replace_m)
     print("Completed net wrap.")
     return wrapped_modules
 
