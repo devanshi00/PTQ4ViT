@@ -4,12 +4,17 @@ import torchvision.transforms as transforms
 from PIL import Image
 import numpy as np
 
-def export_onnx_model(model, name):
+def export_onnx_model(model, name,path):
+    model = timm.create_model(model, pretrained=False)
+    state_dict = torch.load(path, map_location='cpu')
+    torch_model.load_state_dict(state_dict)
+   
     model.eval()
     dummy_input = torch.randn(1, 3, 224, 224)
+    traced_model = torch.jit.trace(model, dummpy_input)
 
     # Export to ONNX
-    onnx_path = f"onnx_models/{name}.onnx"
+    onnx_path = f"onnx_models/{name}_quantised.onnx"
     torch.onnx.export(
         model,
         dummy_input,
