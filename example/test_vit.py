@@ -322,6 +322,7 @@ if __name__ == '__main__':
         # "deit_small_patch16_224",
         # "deit_base_patch16_224",
         # "deit_base_patch16_384",
+        "cait_s24_224",
 
         # "swin_tiny_patch4_window7_224",
         "swin_small_patch4_window7_224",
