@@ -6,12 +6,13 @@ no_softmax = False
 no_postgelu = False
 
 bit = 8
-conv_fc_name_list = ["qconv", "qlinear_qkv", "qlinear_proj", "qlinear_MLP_1", "qlinear_MLP_2", "qlinear_classifier", "qlinear_reduction"]
+conv_fc_name_list = ["qconv", "qlinear_qkv", "qlinear_proj", "qlinear_MLP_1", "qlinear_MLP_2", "qlinear_classifier", "qlinear_reduction","qlinear_class_attn", "qlinear_patch_proj"]
 matmul_name_list = [ "qmatmul_qk", "qmatmul_scorev"]
 w_bit = {name: bit for name in conv_fc_name_list}
 a_bit = {name: bit for name in conv_fc_name_list}
 A_bit = {name: bit for name in matmul_name_list}
 B_bit = {name: bit for name in matmul_name_list}
+
 
 ptqsl_conv2d_kwargs = {
     "metric": "hessian",
@@ -33,6 +34,11 @@ ptqsl_linear_kwargs = {
     "n_a": 1,
     "bias_correction":True # Conventionally I'll not add an actual bias correction in linear
 }
+ptqsl_linear_kwargs.update({
+    "class_attention": False,  # Default value
+    "layer_scale_init": 1e-5,
+    "cls_token_only": False
+})
 ptqsl_matmul_kwargs = {
     "metric": "hessian",
     "eq_alpha": 0.01,
@@ -55,6 +61,14 @@ def get_module(module_type, *args, **kwargs):
         # module=PTQSLQuantConv2d(*args,**kwargs,w_bit=w_bit["qconv"],a_bit=32) # turn off activation quantization
     elif "qlinear" in module_type:
         kwargs.update(ptqsl_linear_kwargs)
+        if "class_attn" in module_type:
+            # Class attention specific handling
+            kwargs.update({
+                "n_head": 8,  # CaiT default
+                "layer_scale": True,
+                "class_attention": True
+            })
+            module = ClassAttnPTQSLBatchingQuantLinear(*args,**kwargs,w_bit=w_bit[module_type],a_bit=a_bit[module_type])
         if module_type == "qlinear_qkv":
             kwargs["n_V"] *= 3  # q, k, v
             module=PTQSLBatchingQuantLinear(*args,**kwargs,w_bit=w_bit[module_type],a_bit=a_bit[module_type])
